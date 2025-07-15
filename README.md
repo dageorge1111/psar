@@ -53,3 +53,10 @@
  - Child process returns 0 from the fork wheras parent gets the actual pid of the child
 ### Match:
  - Pattern matching function
+### Dependency Injection:
+ - Recommended not to use stdout and stderr since it is global and not flexible
+ - Instead dependency inject implementations of a writer or reader so that we can select a different writer for logging tests or other things
+ - Does not lose performance!
+### Writing:
+ - I/O traits require a mutable reference to write since writing changes the internal state of the writer
+ - `.unwrap()` will try to extract a value from a function and if it cannot then it panics and crashes
