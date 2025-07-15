@@ -5,11 +5,13 @@
  - When the parent exits, the child is no longer a session leader
  - Session leaders can reacquire a controlling terminal
  - Forking removes session leader status
+ - Automatically inherrits the open file descriptors stdout and stderr from parent
 ### SID:
  - A session is a collection of related processes usually associated with a user terminal
  - The session leader is the process that creates the session and its PID is SID
  - We need to detach from the controlling terminal 
  - setSID detach from the old terminal
+ - Does not close stdout and stderr
 ### Second Fork:
  - After we detach from the old terminal we want to remove the session leader status so that this process cannot create a new terminal
 ### Systemd
@@ -39,11 +41,14 @@
  - `cargo build` to compile using rustc into a runnable binary
  - `cargo run` to build and run your program
  - When running package directly, main is the entry point otherwise, if library, uses src/lib.rs
+ - main.rs is run once by a single process, the original process
  - Placing packages in dependency of cargo.toml automatically installs on build
  - Installed packages go into a Global Cache Directory in `~/.cargo/registry/` which is shared among all rust projects
 ### Variables:
  - By default, variables are immutable. You can change that with the `mut` keyword
  - Constants are immutable variables but are evaluated at compile time whereas varaibles are evaluated at runtime with global scope. Variables also create a memory binding for reference even though they are mutable.
+ - We can safely shadow and the compiler will use the second instantiation as the proper variable and creates a new binding
+ - A stack allocated primitive variables which are stored directly on stack. Heap is different since it uses heap allocation. In that case, Rust automatically frees that pointer
 ### Fork:
  - Child process returns 0 from the fork wheras parent gets the actual pid of the child
 ### Match:
