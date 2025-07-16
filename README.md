@@ -1,4 +1,9 @@
 # psar
+## Sar:
+ - Collected using a daemon called sadc
+ - Defaults to collecting one snapshot of usage every 10 minutes via cron. Schedule is in `/etc/cron.d/sysstat`
+ - Connect `proc` files with the sar snapshots
+
 ## Daemon:
 ### First Fork:
  - We need to fork a parent process to have it run in the background.
@@ -60,3 +65,19 @@
 ### Writing:
  - I/O traits require a mutable reference to write since writing changes the internal state of the writer
  - `.unwrap()` will try to extract a value from a function and if it cannot then it panics and crashes
+ 
+### OOP in Rust:
+#### Traits:
+ - These are similar to interfaces - they are methods that are implemented seperately for different types
+ - When called on **trait objects**, it is invoked based on runtime information which is called dynamic dispatch
+ - Generics are any type that implements the requisite trait
+#### Monomorphization:
+ - The compiler generates a seperate version of the function for each concrete type used in a generic
+ - This allows for static dispatch because the type is known at runtime
+#### vtable:
+ - Virtual Method Table is a runtime structure that rust creates per concrete type that implements a trait and has pointers to that type's method implementation
+ - Each type-trait combination has a vtable which has pointers to all methods in the trait which are implemented by that type
+ - Allows us to group objects by their shared traits rather than their concrete types exactly
+ - For dynamic dispatch, the compiler still guarantees that the type implements the trait that it is being used for but does not pull the exact implementation until runtime
+#### Classes:
+ - Implementation inheritance is one of the biggest regrets in creating Java. Rust does not have standard classes and therefore forbids classic inheritance of classes

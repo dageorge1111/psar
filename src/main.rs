@@ -13,7 +13,7 @@ fn main() {
         println!("Error forking");
     }
 }
-
+fn matchConfig()
 fn scrapeProc(writer: &mut impl Write) {
     writeln!(writer, "logged something random using dependency injection").unwrap();
 }
