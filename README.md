@@ -81,3 +81,12 @@
  - For dynamic dispatch, the compiler still guarantees that the type implements the trait that it is being used for but does not pull the exact implementation until runtime
 #### Classes:
  - Implementation inheritance is one of the biggest regrets in creating Java. Rust does not have standard classes and therefore forbids classic inheritance of classes
+### Error Handling:
+ - Rust breaks down errors into two types, recoverable errors and unrecoverable errors
+#### Unrecoverable Errors:
+ - Unrecoverable errors usually want the program to stop entirely and use panic!
+ - Two ways of inducing an unrecoverable, either by doing some bad behavior like accessing an array past the end or directly calling `panic!` macro
+ - By default, panic will print a message, unwind, clean up the stack, and quit
+ - Unwinding means that Rust walks back up the stack and cleans up data from each function it encounters. However, you can choose to immedietely abort as well without cleaning up. Add `panic = 'abort'` to the appropriate [profile] sections in your Cargo.toml file
+ - Recoverable errors are usually when the program wants to tell the user something went wrong and retry the operation
+ - Rust does not have exceptions and instead uses the type `Result<T,E>`
