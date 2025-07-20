@@ -10,9 +10,6 @@ use std::path::Path;
 
 fn main() {
     let mut log_file = File::create("log.txt").unwrap();
-    let psar = Psar::new(log_file);
-}
-//fn matchConfig()
-fn scrapeProc(writer: &mut impl Write) {
-    writeln!(writer, "logged something random using dependency injection").unwrap();
+    let mut psar = Psar::new(&mut log_file);
+    psar.start();
 }

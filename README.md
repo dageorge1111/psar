@@ -90,3 +90,14 @@
  - Unwinding means that Rust walks back up the stack and cleans up data from each function it encounters. However, you can choose to immedietely abort as well without cleaning up. Add `panic = 'abort'` to the appropriate [profile] sections in your Cargo.toml file
  - Recoverable errors are usually when the program wants to tell the user something went wrong and retry the operation
  - Rust does not have exceptions and instead uses the type `Result<T,E>`
+### Lifetimes:
+ - The compiler checks the lifetime length of each variable that references and if a variable has a lifetime longer than the variable it is referencing
+### Vectors:
+ - Re-sizeable arrays. Their size is not known at compile time. It tracks a pointer to data, length, and capacity of the vector
+ - Length is an integer stored on the stack 
+### String:
+ - A vector of bytes `Vec<u8>` which is heap allocated, growable and not null terminated
+ - `&str` is a slice that always points to a valid UTF-8 sequence
+ - `len` has the number of bytes used to encode the the string in UTF-8 which can be more than 1 byte per char instead for chars use `s.chars().count()`
+ - `.chars().rev()` creates a reversed character iterator
+ - `.take(x)` yields up to x characters
