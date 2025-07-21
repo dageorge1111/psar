@@ -41,11 +41,14 @@ impl<'a> Psar<'a> {
             let until = datetime - now;
             thread::sleep(until.to_std().unwrap());
             let paths = fs::read_dir("/proc").unwrap();
-            for path in paths {
-                let filename = path.unwrap().file_name();
-                if let Some(name) = filename.to_str() {
+            for entry in paths {
+                let entry = entry.unwrap();
+                let mut path = entry.path();
+                let dirname = entry.file_name();
+                if let Some(name) = dirname.to_str() {
                     if name.chars().all(|c| c.is_ascii_digit()) {
-                        writeln!(self.writer, "PID: {}", name).unwrap();
+                        path.push("io");
+                        self.scrapeProcIO(path);
                     }
                 }
             }
@@ -75,15 +78,16 @@ impl<'a> Psar<'a> {
     }
 
     //TODO Somehow we need to implement a default value here
+    //TODO needs to capture schedule more accurately
     fn getSarInterval() -> Schedule {
         if let Ok(lines) = Self::read_lines("/etc/cron.d/sysstat") {
             for line in lines.map_while(Result::ok) {
                 let tokens: Vec<&str> = line.trim().split_whitespace().collect();
                 
-                if tokens.len() < 3 {continue;}
+                if tokens.len() < 2 {continue;}
 
-                let command = &tokens[tokens.len() - 3..];
-                let targetCommand: Vec<&str> = ["debian-sa1", "1", "1"].to_vec();
+                let command = &tokens[tokens.len() - 2..];
+                let targetCommand: Vec<&str> = ["1", "1"].to_vec();
 
                 if command==targetCommand {
                     let minute_expr = tokens[0..5].join(" ");
@@ -103,11 +107,11 @@ impl<'a> Psar<'a> {
         Ok(io::BufReader::new(file).lines())
     }
 
-    fn scrapeProcIO<P>(ioFile: P)
+    fn scrapeProcIO<P>(&mut self, ioFile: P)
     where P: AsRef<Path>, {
         if let Ok(lines) = Self::read_lines(ioFile) {
             for line in lines.map_while(Result::ok) {
-                println!(line)
+                writeln!(self.writer, "{}", line).unwrap();
             }
         }
     }
