@@ -3,6 +3,19 @@
  - Collected using a daemon called sadc
  - Defaults to collecting one snapshot of usage every 10 minutes via cron. Schedule is in `/etc/cron.d/sysstat`
  - Connect `proc` files with the sar snapshots
+### IO:
+ - rchar is the number of bytes that the process has read from storage or a page cache aka the number of bytes requested from the process
+ - read_bytes is the number of bytes the kernel actually fetches from disk
+ - similar logic for wchar and write_bytes
+ - cancelled_write_bytes are the number of bytes written by user requested but never hit the disk
+ - rchar(from cache) does not contribute to iowait
+ - iowait is the percentage of time the CPU spent idle waiting for an I/O operation to complete
+ - Programmed IO is the simplest possible I/O method where microprocessors have a explicit sequence of instructions and a single input and output
+ - Interrupt driven IO is when the CPU instructs an IO device to start the task and generate an interrupt when done. This however leads to many unneccessary interrupts after something like a single character transmitted
+ - DMA controller/chip allows a device to transfer data from memory directly without the CPU manually copying byte by byte by setting up a few registers for a source address, a destination address, a size of transfer, and a direction(read or write). DMA controller takes over and works without any further CPU instructions and raises interrupt when done
+ - Usually reads cause iowait since it is blocking until the data arrives, writes are usually buffered.
+ - However, if writes are happening after explicitely flushing the disk, the kernel's writeback thread is overwhelmed and write buffers fill up aka explicitely flushed writing
+ - Buffered writing will rarely cause iowait unless the dirty page threshold is exceeded where kernel blocks until it is cleared
 
 ## Daemon:
 ### First Fork:
@@ -101,3 +114,5 @@
  - `len` has the number of bytes used to encode the the string in UTF-8 which can be more than 1 byte per char instead for chars use `s.chars().count()`
  - `.chars().rev()` creates a reversed character iterator
  - `.take(x)` yields up to x characters
+### HashMap:
+ - implemented using quadratic probing and SIMD lookup - single instruction multiple data.
