@@ -116,3 +116,21 @@
  - `.take(x)` yields up to x characters
 ### HashMap:
  - implemented using quadratic probing and SIMD lookup - single instruction multiple data.
+### Threads:
+ - No guarantee on order in which parts of multithreaded code will run
+ - Race conditions are when threads access data in an inconsistent order
+ - Deadlock is when multiple threads are waiting on each other to finish
+ - Rust uses a 1:1 model of thread implementation in which they use one OS thread per programming language thread
+ - `thread::spawn` will create a new thread and pass a closure containing the code we want to run
+ - When the main thread completes, all spawned threads are shut down which you can avoid with `join` handle which blocks completion of current thread until the thread represented by handle is completed
+ - We use `move` keyword to pass ownership of a value from one thread to another. Rust wants to borrow a reference from another thread but does not know how long that reference will exist so it does not know if the reference is going to be valid for the entire existence of the thread
+#### Message Passing:
+ - “Do not communicate by sharing memory; instead, share memory by communicating.”
+ - Rust standard library includes a channel implementation which is a programming concept allowing data to be sent from one thread to another
+ - Includes a transmitter which is called to send data and a reciever which is checked for arriving messages
+ - `mpsc::channel` where mpsc stands for multiple producer, single consumer which returns a tuple (transmitter, receiver)
+ - Once we send a value, we transfer ownership of that value to the send function
+ - We can treat rx as an iterator which will close once the channel is closed
+ - We can call `.clone` on a transmitter
+### Closures:
+ - anonymous functions you can save in a variable

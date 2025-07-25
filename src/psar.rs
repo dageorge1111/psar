@@ -2,15 +2,18 @@ use libc::{fork, setsid, getpid, pid_t};
 use std::process::exit;
 use std::path::{Path, PathBuf};
 use std::env;
-use std::io::{self, Write};
-use std::fs::{self, File};
-use std::io::BufRead;
+use std::io::{self, Write, BufRead};
+use std::fs::{self, File, DirEntry};
+use std::sync::mpsc;
+use std::sync::mpsc::Sender;
 use cron::Schedule;
 use chrono::Utc;
 use std::str::FromStr;
 use std::thread;
 use std::collections::HashMap;
 
+//TODO needs to run with sudo priviliges
+//TODO need proper error handling not just panic everything
 //TODO we need to figure out how to determine flushed vs buffered writes to quantify write_bytes contribution to iowait
 //For now we will just ignore write operations but we need to figure out how to measure write operations
 pub struct Psar<'a> {
@@ -49,24 +52,21 @@ impl<'a> Psar<'a> {
             let until = datetime - now;
             thread::sleep(until.to_std().unwrap());
             let paths = fs::read_dir("/proc").unwrap();
+            
+            let (tx, rx) = mpsc::channel();
+
             for entry in paths {
                 let entry = entry.unwrap();
-                let mut path = entry.path();
-                let dirname = entry.file_name();
-                if let Some(proc_pid) = dirname.to_str() {
-                    if proc_pid.chars().all(|c| c.is_ascii_digit()) {
-                        path.push("io");
-                        self.scrapeProcIO(path, proc_pid.parse::<u32>().unwrap());
-                        match self.process_io_dict.get(&proc_pid.parse::<u32>().unwrap()) {
-                            Some(io_value) => {
-                                writeln!(self.writer, "Parsed PID: {}, Total IO: {}", proc_pid, io_value).unwrap();
-                            }
-                            None => {
-                                writeln!(self.writer, "No IO recorded for PID {}", proc_pid).unwrap();
-                            }
-                        }
-                    }
-                }
+                let tx1 = tx.clone();
+
+                thread::spawn(move || {
+                    Psar::processPath(entry, tx1);
+                });
+            }
+
+            for received in rx {
+                let (pid, io_value) = received;
+                println!("Reciever got PID: {}, IO: {}", pid, io_value);
             }
         }
     }
@@ -94,7 +94,6 @@ impl<'a> Psar<'a> {
     }
 
     //TODO Somehow we need to implement a default value here
-    //TODO needs to capture schedule more accurately
     fn getSarInterval() -> Schedule {
         if let Ok(lines) = Self::read_lines("/etc/cron.d/sysstat") {
             for line in lines.map_while(Result::ok) {
@@ -118,34 +117,43 @@ impl<'a> Psar<'a> {
         Schedule::from_str("0 */5 * * * *").unwrap()
     }
 
+    fn processPath(entry: DirEntry, tx: Sender<(u32, u64)>){
+        let mut path = entry.path();
+        let dirname = entry.file_name();
+
+        if let Some(proc_pid) = dirname.to_str() {
+            if proc_pid.chars().all(|c| c.is_ascii_digit()) {
+                path.push("io");
+                let io_value = Psar::scrapeProcIO(path, proc_pid.parse::<u32>().unwrap());
+                tx.send((proc_pid.parse::<u32>().unwrap(), io_value)).unwrap();
+                println!("Parsed PID: {}, Total IO: {}", proc_pid, io_value);
+            }
+        }
+    }
+
     fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
     where P: AsRef<Path>, {
         let file = File::open(filename)?;
         Ok(io::BufReader::new(file).lines())
     }
 
-    fn scrapeProcIO<P>(&mut self, ioFile: P, proc_pid: u32)
+    fn scrapeProcIO<P>(ioFile: P, proc_pid: u32) -> u64
     where P: AsRef<Path>, {
+        let mut total_io = 0;
+
         if let Ok(lines) = Self::read_lines(ioFile) {
             for line in lines.map_while(Result::ok) {
-                writeln!(self.writer, "{}", line).unwrap();
                 let tokens: Vec<&str> = line
                     .trim().split_whitespace().collect();
 
                 if tokens.len() < 2 {continue;}
 
-                let additional_io = tokens[1].parse::<u64>().unwrap();
-
                 match tokens[0] {
                     "read_bytes:" => {
-                        self.process_io_dict.entry(proc_pid)
-                            .and_modify(|v| *v += additional_io)
-                            .or_insert(additional_io);
+                        total_io += tokens[1].parse::<u64>().unwrap();
                     }
                     "write_bytes:" => {
-                        self.process_io_dict.entry(proc_pid)
-                            .and_modify(|v| *v += additional_io)
-                            .or_insert(additional_io);
+                        total_io += tokens[1].parse::<u64>().unwrap();
                     }
                     &_ => {
                         continue;
@@ -153,6 +161,8 @@ impl<'a> Psar<'a> {
                 }
             }
         }
+
+        total_io
     }
     //pub fn kill()
 }
