@@ -56,18 +56,15 @@ impl<'a> Psar<'a> {
                 if let Some(proc_pid) = dirname.to_str() {
                     if proc_pid.chars().all(|c| c.is_ascii_digit()) {
                         path.push("io");
-                        match proc_pid.parse::<u32>() {
-                            Ok(pid) => {
-                                // parsed successfully
-                                writeln!(self.writer, "Parsed PID: {}", pid).unwrap();
+                        self.scrapeProcIO(path, proc_pid.parse::<u32>().unwrap());
+                        match self.process_io_dict.get(&proc_pid.parse::<u32>().unwrap()) {
+                            Some(io_value) => {
+                                writeln!(self.writer, "Parsed PID: {}, Total IO: {}", proc_pid, io_value).unwrap();
                             }
-                            Err(e) => {
-                                // failed to parse
-                                writeln!(self.writer, "Failed to parse PID {}", proc_pid).unwrap();
+                            None => {
+                                writeln!(self.writer, "No IO recorded for PID {}", proc_pid).unwrap();
                             }
                         }
-                        self.scrapeProcIO(path, proc_pid.parse::<u32>().unwrap());
-                        //writeln!(self.writer, "total io points: {}", self.process_io_dict.get(&proc_pid.parse::<u32>().unwrap()).expect("REASON").to_string()).unwrap();                    
                     }
                 }
             }
@@ -140,7 +137,7 @@ impl<'a> Psar<'a> {
                 let additional_io = tokens[1].parse::<u64>().unwrap();
 
                 match tokens[0] {
-                    "read_bytes::" => {
+                    "read_bytes:" => {
                         self.process_io_dict.entry(proc_pid)
                             .and_modify(|v| *v += additional_io)
                             .or_insert(additional_io);
